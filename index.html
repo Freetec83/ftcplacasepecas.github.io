@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FTC Eletrônica - Loja de Placas de TV</title>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #ff6600, #ff9f43, #fff3cd);
+    background-size: 400% 400%;
+    animation: gradient 12s ease infinite;
+    color: #333;
+  }
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  header {
+    background: rgba(255,255,255,0.95);
+    padding: 20px;
+    border-bottom: 3px solid #ff6600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    text-align: center;
+  }
+  header img { width: 180px; }
+  h1 { margin: 10px 0 5px; }
+
+  /* Barra de filtros e busca */
+  .filtros {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0;
+  }
+  .filtros select, .filtros input {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+  }
+
+  /* Produtos */
+  #lista-produtos {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    padding: 0 10px;
+  }
+  .produto-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    width: 230px;
+    padding: 12px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .produto-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+  }
+  .produto-card img {
+    width: 100%;
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  .produto-card h3 {
+    margin: 5px 0;
+    font-size: 17px;
+  }
+  .preco {
+    color: #ff6600;
+    font-weight: bold;
+    font-size: 16px;
+  }
+  .btn-whatsapp {
+    display: inline-block;
+    background-color: #25d366;
+    color: white;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    margin-top: auto;
+    transition: background 0.3s;
+  }
+  .btn-whatsapp:hover { background-color: #1ebe5b; }
+
+  footer {
+    background: rgba(255,255,255,0.95);
+    padding: 30px;
+    border-top: 3px solid #ff6600;
+    text-align: center;
+    margin-top: 40px;
+  }
+  footer img { width: 200px; border-radius: 10px; margin-top: 10px; }
+  .creditos { color: #777; font-size: 13px; margin-top: 10px; }
+
+  /* Responsivo */
+  @media (max-width: 768px) { .produto-card { width: 45%; } }
+  @media (max-width: 480px) { .produto-card { width: 90%; } }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="imagens/logo.jpg" alt="FTC Eletrônica">
+  <h1>FTC Eletrônica</h1>
+  <p>Venda de placas e peças de TV usadas - Duque de Caxias, RJ</p>
+</header>
+
+<main>
+  <div class="filtros">
+    <input type="text" id="busca" placeholder="🔍 Buscar produto...">
+    <select id="marca"><option value="">Todas as marcas</option></select>
+    <select id="ordem">
+      <option value="">Ordenar</option>
+      <option value="asc">Preço: menor → maior</option>
+      <option value="desc">Preço: maior → menor</option>
+    </select>
+  </div>
+  <div id="lista-produtos">Carregando produtos...</div>
+</main>
+
+<footer>
+  <h3>Pagamento via Pix</h3>
+  <p>Escaneie o QR Code abaixo para realizar o pagamento:</p>
+  <img src="imagens/pix-qrcode.jpg" alt="QR Code Pix FTC Eletrônica">
+  <div class="creditos">© 2025 FTC Eletrônica - Todos os direitos reservados</div>
+</footer>
+
+<script>
+const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRmdUQphUaHtXDEOZLT92lKB3x2xsMQXryTNLc2c3yjmmoUBzPuDiiGdtBpXEzeIkTHO34hg82WwSo/pubhtml";
+
+let produtos = [];
+
+async function carregarProdutos() {
+  try {
+    const response = await fetch(sheetURL);
+    const data = await response.text();
+    const linhas = data.split('\n').slice(1);
+
+    produtos = linhas.map(linha => {
+      const [nome, preco, descricao, imagem] = linha.split(',');
+      const marca = nome.split(' ')[1] || 'Outros';
+      return { nome, preco, descricao, imagem, marca };
+    }).filter(p => p.nome);
+
+    preencherMarcas();
+    exibirProdutos(produtos);
+  } catch (error) {
+    document.getElementById('lista-produtos').innerHTML = "Erro ao carregar produtos.";
+    console.error(error);
+  }
+}
+
+function preencherMarcas() {
+  const marcas = [...new Set(produtos.map(p => p.marca.trim()))].sort();
+  const select = document.getElementById('marca');
+  marcas.forEach(marca => {
+    const option = document.createElement('option');
+    option.value = marca;
+    option.textContent = marca;
+    select.appendChild(option);
+  });
+}
+
+function exibirProdutos(lista) {
+  const container = document.getElementById('lista-produtos');
+  container.innerHTML = '';
+  if (lista.length === 0) {
+    container.innerHTML = "<p>Nenhum produto encontrado.</p>";
+    return;
+  }
+  lista.forEach(({ nome, preco, descricao, imagem }) => {
+    const card = document.createElement('div');
+    card.className = 'produto-card';
+    card.innerHTML = `
+      <img src="imagens/${imagem?.trim()}" alt="${nome}">
+      <h3>${nome}</h3>
+      <p class="preco">${preco}</p>
+      <p>${descricao}</p>
+      <a class="btn-whatsapp" target="_blank"
+         href="https://wa.me/5521969296070?text=Olá,+tenho+interesse+na+${encodeURIComponent(nome)}+da+FTC+Eletrônica.">
+         💬 Falar no WhatsApp
+      </a>
+    `;
+    container.appendChild(card);
+  });
+}
+
+document.getElementById('busca').addEventListener('input', filtrar);
+document.getElementById('marca').addEventListener('change', filtrar);
+document.getElementById('ordem').addEventListener('change', filtrar);
+
+function filtrar() {
+  const busca = document.getElementById('busca').value.toLowerCase();
+  const marca = document.getElementById('marca').value;
+  const ordem = document.getElementById('ordem').value;
+
+  let filtrados = produtos.filter(p =>
+    p.nome.toLowerCase().includes(busca) &&
+    (marca === '' || p.marca === marca)
+  );
+
+  filtrados.sort((a,b) => {
+    const pa = parseFloat(a.preco.replace(/[^\d]/g, '')) || 0;
+    const pb = parseFloat(b.preco.replace(/[^\d]/g, '')) || 0;
+    return ordem === 'asc' ? pa - pb : ordem === 'desc' ? pb - pa : 0;
+  });
+
+  exibirProdutos(filtrados);
+}
+
+carregarProdutos();
+</script>
+
+</body>
+</html>
